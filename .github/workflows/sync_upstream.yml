@@ -1,0 +1,50 @@
+name: Sync from Upstream
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # 每天UTC时间02:00（北京时间10:00）运行
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # 获取完整历史记录
+    
+    - name: Setup Git
+      run: |
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+    
+    - name: Add upstream remote
+      run: git remote add upstream https://github.com/cmliu/edgetunnel.git || true
+    
+    - name: Fetch upstream changes
+      run: git fetch upstream
+    
+    - name: Check for updates
+      id: check_update
+      run: |
+        if git diff --quiet HEAD upstream/main; then
+            echo "no_update=true" >> $GITHUB_OUTPUT
+        else
+            echo "no_update=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Merge upstream changes
+      if: steps.check_update.outputs.no_update == 'false'
+      run: |
+        git merge upstream/main
+        git push origin main
+    
+    - name: Log result
+      run: |
+        if [ "${{ steps.check_update.outputs.no_update }}" = "true" ]; then
+            echo "✅ 当前已是最新版本，无需同步"
+        else
+            echo "✅ 同步完成！已获取最新更新"
+        fi
