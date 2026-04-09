@@ -38,7 +38,7 @@ jobs:
     - name: Merge upstream changes
       if: steps.check_update.outputs.no_update == 'false'
       run: |
-        git merge upstream/main
+        git merge upstream/main --allow-unrelated-histories
         git push origin main
     
     - name: Log result
